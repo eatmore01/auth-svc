@@ -1,0 +1,67 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: postgres
+    restart: always
+    env_file:
+      - .env     
+    ports:
+      - ${POSTGRES_PORT}:${POSTGRES_PORT}
+    expose: 
+      - ${POSTGRES_PORT}
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    networks:
+      - db_network
+  builder:
+    build:
+      context: .
+      dockerfile: Dockerfile.migrate
+    container_name: make-builder
+    volumes:
+      - .:/usr/src/app
+    working_dir: /usr/src/app 
+    depends_on:
+      - db
+    networks:
+      - db_network
+  auth-svc: 
+    image: ${IMAGE_NAME}
+    container_name: auth-svc
+    restart: always
+    depends_on:
+      - db
+      - builder 
+    healthcheck:
+      test: ["CMD-SHELL", "sh healthcheck.sh"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    tty: true
+    stdin_open: true
+  # auth-svc: 
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   container_name: auth-svc
+  #   restart: always
+  #   ports:
+  #     - 7777:${SERVER_PORT}
+  #   depends_on:
+  #     - db
+  #     - builder 
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "sh healthcheck.sh"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 5
+  #   tty: true
+  #   stdin_open: true
+
+networks:
+  db_network:
+    name: db_network
+
+volumes:
+  postgres:
+    name: auth_db

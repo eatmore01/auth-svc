@@ -1,0 +1,11 @@
+FROM alpine:latest
+
+RUN apk add --no-cache curl make bash
+
+RUN curl -fsSL https://raw.githubusercontent.com/pressly/goose/master/install.sh | sh
+
+WORKDIR /usr/src/app
+
+COPY Makefile.docker ./
+
+CMD ["make","-f","Makefile.docker", "up"]
